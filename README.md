@@ -21,17 +21,19 @@ import { VorlekClient } from '@vorlek/sdk';
 
 const client = new VorlekClient({ apiKey: process.env.VORLEK_API_KEY! });
 const result = await client.contact.upsert({ provider: 'sendgrid', email: 'test@example.com' });
-console.log(result.contact_id);
+console.log(result.data.contact_id, result.meta.request_id);
 ```
 
 ## Methods
 
-- `client.contact.upsert(input)` — create or update a contact.
-- `client.send.transactional(input)` — send one transactional email where supported.
-- `client.campaign.stats(input)` — fetch normalized campaign metrics.
-- `client.connection.status(input)` — check live provider credential status.
+- `client.contact.upsert(input, options?)` — create or update a contact.
+- `client.send.transactional(input, options?)` — send one transactional email where supported.
+- `client.campaign.stats(input, options?)` — fetch normalized campaign metrics.
+- `client.connection.status(input, options?)` — check live provider credential status.
 
-Each method sends `Authorization`, `Content-Type`, `User-Agent`, and an auto-generated `Idempotency-Key` header. Pass `idempotencyKey: () => '...'` to the constructor to pin a key for explicit retry flows.
+Each method returns `{ data, meta }`, where `data` is the tool result and `meta` includes `request_id`, quota state, rate-limit state, and idempotency replay state when the API provides it.
+
+Each method sends `Authorization`, `Content-Type`, `User-Agent`, and an auto-generated `Idempotency-Key` header. Pass `{ idempotencyKey: '...' }` as the second method argument to pin a key for a single explicit retry flow. You can also pass `idempotencyKey: () => '...'` to the constructor to customize the default generator.
 
 ## Errors
 

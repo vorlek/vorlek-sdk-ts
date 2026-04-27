@@ -4,8 +4,13 @@ import { VorlekClientError, VorlekProviderError, VorlekServerError } from './err
 
 const ULID_RE = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 
-function ok(data: unknown): Response {
-  return Response.json({ status: 'success', data, meta: {}, tip: null });
+function ok(data: unknown, meta: Record<string, unknown> = {}): Response {
+  return Response.json({
+    status: 'success',
+    data,
+    meta: { request_id: '01HV0000000000000000000000', ...meta },
+    tip: null,
+  });
 }
 
 function errorResponse(
@@ -122,13 +127,95 @@ describe('VorlekClient request shape', () => {
     expect(requestParts(fetchMock).headers.get('idempotency-key')).toBe('CUSTOMKEY');
   });
 
-  it('returns only the envelope data object', async () => {
-    const fetchMock = vi.fn(async () => ok({ contact_id: 'c1', action: 'upserted' }));
+  it('supports per-call idempotency-key override', async () => {
+    const fetchMock = vi.fn(async () => ok({ contact_id: 'c1' }));
+    const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
+
+    await client.contact.upsert(
+      { provider: 'sendgrid', email: 'a@example.com' },
+      { idempotencyKey: 'METHODKEY' }
+    );
+
+    expect(requestParts(fetchMock).headers.get('idempotency-key')).toBe('METHODKEY');
+  });
+
+  it('lets per-call idempotency-key override beat the client default', async () => {
+    const fetchMock = vi.fn(async () => ok({ contact_id: 'c1' }));
+    const client = new VorlekClient({
+      apiKey: 'vk_test_x',
+      idempotencyKey: () => 'CLIENTKEY',
+      fetch: fetchMock,
+    });
+
+    await client.contact.upsert(
+      { provider: 'sendgrid', email: 'a@example.com' },
+      { idempotencyKey: 'METHODKEY' }
+    );
+
+    expect(requestParts(fetchMock).headers.get('idempotency-key')).toBe('METHODKEY');
+  });
+
+  it('returns the envelope data and meta object', async () => {
+    const fetchMock = vi.fn(async () =>
+      ok(
+        { contact_id: 'c1', action: 'upserted' },
+        {
+          quota: { used: 7, limit: 1000, resets_at: '2026-05-01T00:00:00.000Z' },
+        }
+      )
+    );
     const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
 
     const result = await client.contact.upsert({ email: 'a@example.com' });
 
-    expect(result).toEqual({ contact_id: 'c1', action: 'upserted' });
+    expect(result).toEqual({
+      data: { contact_id: 'c1', action: 'upserted' },
+      meta: {
+        request_id: '01HV0000000000000000000000',
+        quota: { used: 7, limit: 1000, resets_at: '2026-05-01T00:00:00.000Z' },
+      },
+    });
+  });
+
+  it('merges rate-limit headers into response meta', async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json(
+        {
+          status: 'success',
+          data: { contact_id: 'c1' },
+          meta: { request_id: '01HV0000000000000000000000', ratelimit: { check_skipped: false } },
+          tip: null,
+        },
+        {
+          headers: {
+            'X-RateLimit-Limit': '60',
+            'X-RateLimit-Remaining': '47',
+            'X-RateLimit-Reset': '1770000000',
+          },
+        }
+      )
+    );
+    const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
+
+    const result = await client.contact.upsert({ email: 'a@example.com' });
+
+    expect(result.meta.ratelimit).toEqual({
+      check_skipped: false,
+      limit: 60,
+      remaining: 47,
+      reset_at: '2026-02-02T02:40:00.000Z',
+    });
+  });
+
+  it('surfaces idempotency replay metadata', async () => {
+    const fetchMock = vi.fn(async () =>
+      ok({ contact_id: 'c1' }, { idempotency: { replay: true } })
+    );
+    const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
+
+    const result = await client.contact.upsert({ email: 'a@example.com' });
+
+    expect(result.meta.idempotency?.replay).toBe(true);
   });
 });
 

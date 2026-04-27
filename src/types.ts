@@ -20,6 +20,32 @@ type JsonSuccess<
 
 type EnvelopeData<TEnvelope> = TEnvelope extends { data: infer Data } ? Data : never;
 
+export interface ResponseMeta {
+  request_id: string;
+  quota?: {
+    used: number;
+    limit: number;
+    resets_at: string;
+    check_skipped?: boolean;
+  };
+  ratelimit?: {
+    limit?: number;
+    remaining?: number;
+    reset_at?: string;
+    check_skipped?: boolean;
+  };
+  idempotency?: { replay: boolean };
+}
+
+export interface VorlekResult<TData> {
+  data: TData;
+  meta: ResponseMeta;
+}
+
+export interface RequestOptions {
+  idempotencyKey?: string;
+}
+
 export type UpsertContactInput = JsonRequest<'/v1/tools/upsert_contact', 'post'>;
 export type UpsertContactResult = EnvelopeData<JsonSuccess<'/v1/tools/upsert_contact', 'post'>>;
 

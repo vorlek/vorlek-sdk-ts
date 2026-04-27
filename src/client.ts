@@ -5,10 +5,13 @@ import type {
   GetCampaignStatsResult,
   GetConnectionStatusInput,
   GetConnectionStatusResult,
+  RequestOptions,
+  ResponseMeta,
   SendTransactionalInput,
   SendTransactionalResult,
   UpsertContactInput,
   UpsertContactResult,
+  VorlekResult,
 } from './types.js';
 import { VERSION } from './version.js';
 
@@ -21,19 +24,31 @@ export interface VorlekClientOptions {
 }
 
 export interface ContactNamespace {
-  upsert(input: UpsertContactInput): Promise<UpsertContactResult>;
+  upsert(
+    input: UpsertContactInput,
+    options?: RequestOptions
+  ): Promise<VorlekResult<UpsertContactResult>>;
 }
 
 export interface SendNamespace {
-  transactional(input: SendTransactionalInput): Promise<SendTransactionalResult>;
+  transactional(
+    input: SendTransactionalInput,
+    options?: RequestOptions
+  ): Promise<VorlekResult<SendTransactionalResult>>;
 }
 
 export interface CampaignNamespace {
-  stats(input: GetCampaignStatsInput): Promise<GetCampaignStatsResult>;
+  stats(
+    input: GetCampaignStatsInput,
+    options?: RequestOptions
+  ): Promise<VorlekResult<GetCampaignStatsResult>>;
 }
 
 export interface ConnectionNamespace {
-  status(input: GetConnectionStatusInput): Promise<GetConnectionStatusResult>;
+  status(
+    input: GetConnectionStatusInput,
+    options?: RequestOptions
+  ): Promise<VorlekResult<GetConnectionStatusResult>>;
 }
 
 const DEFAULT_API_BASE = 'https://api.vorlek.com';
@@ -62,21 +77,25 @@ export class VorlekClient {
     this.fetchImpl = opts.fetch ?? globalThis.fetch;
 
     this.contact = {
-      upsert: (input) => this.post('/v1/tools/upsert_contact', input),
+      upsert: (input, options) => this.post('/v1/tools/upsert_contact', input, options),
     };
     this.send = {
-      transactional: (input) => this.post('/v1/tools/send_transactional', input),
+      transactional: (input, options) => this.post('/v1/tools/send_transactional', input, options),
     };
     this.campaign = {
-      stats: (input) => this.post('/v1/tools/get_campaign_stats', input),
+      stats: (input, options) => this.post('/v1/tools/get_campaign_stats', input, options),
     };
     this.connection = {
-      status: (input) => this.post('/v1/tools/get_connection_status', input),
+      status: (input, options) => this.post('/v1/tools/get_connection_status', input, options),
     };
   }
 
-  private async post<TInput, TResult>(path: string, input: TInput): Promise<TResult> {
-    const response = await this.fetchJson(path, input);
+  private async post<TInput, TResult>(
+    path: string,
+    input: TInput,
+    options?: RequestOptions
+  ): Promise<VorlekResult<TResult>> {
+    const response = await this.fetchJson(path, input, options);
     const body = await parseJson(response);
 
     if (!response.ok) {
@@ -87,10 +106,17 @@ export class VorlekClient {
       throw errorFromEnvelope(body, response.status);
     }
 
-    return body.data as TResult;
+    return {
+      data: body.data as TResult,
+      meta: extractMeta(body, response.headers),
+    };
   }
 
-  private async fetchJson(path: string, input: unknown): Promise<Response> {
+  private async fetchJson(
+    path: string,
+    input: unknown,
+    options?: RequestOptions
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeout);
     try {
@@ -99,7 +125,7 @@ export class VorlekClient {
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
-          'Idempotency-Key': this.idempotencyKey(),
+          'Idempotency-Key': options?.idempotencyKey ?? this.idempotencyKey(),
           'User-Agent': `@vorlek/sdk/${VERSION}`,
         },
         body: JSON.stringify(input),
@@ -121,13 +147,73 @@ async function parseJson(response: Response): Promise<unknown> {
   }
 }
 
-function isSuccessEnvelope(value: unknown): value is { status: 'success'; data: unknown } {
+function isSuccessEnvelope(value: unknown): value is {
+  status: 'success';
+  data: unknown;
+  meta?: unknown;
+} {
   return (
     typeof value === 'object' &&
     value !== null &&
     (value as { status?: unknown }).status === 'success' &&
     'data' in value
   );
+}
+
+function extractMeta(body: { meta?: unknown }, headers: Headers): ResponseMeta {
+  const bodyMeta = isRecord(body.meta) ? body.meta : {};
+  const quota = isRecord(bodyMeta.quota)
+    ? {
+        used: Number(bodyMeta.quota.used),
+        limit: Number(bodyMeta.quota.limit),
+        resets_at: String(bodyMeta.quota.resets_at),
+        ...(typeof bodyMeta.quota.check_skipped === 'boolean'
+          ? { check_skipped: bodyMeta.quota.check_skipped }
+          : {}),
+      }
+    : undefined;
+  const bodyRatelimit = isRecord(bodyMeta.ratelimit) ? bodyMeta.ratelimit : undefined;
+  const headerLimit = parseIntegerHeader(headers.get('x-ratelimit-limit'));
+  const headerRemaining = parseIntegerHeader(headers.get('x-ratelimit-remaining'));
+  const headerReset = parseResetHeader(headers.get('x-ratelimit-reset'));
+  const ratelimit =
+    bodyRatelimit || headerLimit !== undefined || headerRemaining !== undefined || headerReset
+      ? {
+          ...(typeof bodyRatelimit?.check_skipped === 'boolean'
+            ? { check_skipped: bodyRatelimit.check_skipped }
+            : {}),
+          ...(headerLimit !== undefined ? { limit: headerLimit } : {}),
+          ...(headerRemaining !== undefined ? { remaining: headerRemaining } : {}),
+          ...(headerReset ? { reset_at: headerReset } : {}),
+        }
+      : undefined;
+  const idempotency = isRecord(bodyMeta.idempotency)
+    ? { replay: bodyMeta.idempotency.replay === true }
+    : undefined;
+
+  return {
+    request_id: typeof bodyMeta.request_id === 'string' ? bodyMeta.request_id : '',
+    ...(quota ? { quota } : {}),
+    ...(ratelimit ? { ratelimit } : {}),
+    ...(idempotency ? { idempotency } : {}),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function parseIntegerHeader(value: string | null): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseResetHeader(value: string | null): string | undefined {
+  const parsed = parseIntegerHeader(value);
+  return parsed === undefined ? undefined : new Date(parsed * 1000).toISOString();
 }
 
 function normalizeBase(base: string): string {
