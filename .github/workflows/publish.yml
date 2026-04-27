@@ -30,4 +30,7 @@ jobs:
         run: pnpm build
 
       - name: Publish
-        run: npm publish --provenance --access public
+        # npm provenance currently rejects private GitHub repositories. Trusted
+        # Publishing still supplies the auth token through OIDC; enable
+        # --provenance after the source repo is public.
+        run: npm publish --access public
