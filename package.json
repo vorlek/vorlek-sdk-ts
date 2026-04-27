@@ -2,6 +2,10 @@
   "name": "@vorlek/sdk",
   "version": "0.1.1",
   "description": "TypeScript SDK for the Vorlek API",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vorlek/vorlek-sdk-ts"
+  },
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "engines": {
