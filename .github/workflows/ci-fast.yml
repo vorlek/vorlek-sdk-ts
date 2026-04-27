@@ -29,10 +29,9 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Clone docs for generated types
-        run: git clone --depth=1 https://github.com/vorlek/vorlek-docs.git ../vorlek-docs
-
       - name: Generate types
+        env:
+          VORLEK_OPENAPI_SOURCE: https://vorlek.dev/openapi.json
         run: pnpm types:generate
 
       - name: Check generated type drift

@@ -8,7 +8,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const docsRoot = process.env.VORLEK_DOCS_DIR
   ? path.resolve(process.env.VORLEK_DOCS_DIR)
   : path.resolve(repoRoot, '../vorlek-docs');
-const input = path.join(docsRoot, 'openapi.json');
+const input = process.env.VORLEK_OPENAPI_SOURCE ?? path.join(docsRoot, 'openapi.json');
 const output = path.join(repoRoot, 'src/types.generated.ts');
 
 await mkdir(path.dirname(output), { recursive: true });
