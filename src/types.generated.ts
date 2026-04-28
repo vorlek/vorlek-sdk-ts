@@ -1199,6 +1199,232 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tools/list_templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** List provider templates */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Template list payload. */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ListTemplatesInput"];
+                };
+            };
+            responses: {
+                /** @description Template list result. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ListTemplatesResponse"];
+                    };
+                };
+                /** @description Bad request or provider credential error. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Missing, invalid, or revoked API key. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Authenticated key lacks required scope. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Requested resource or provider connection not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Conflict. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Quota or rate limit exceeded. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Internal server error. */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Tool/provider pair is not supported. */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tools/list_campaigns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** List provider campaigns */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Campaign list payload. */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ListCampaignsInput"];
+                };
+            };
+            responses: {
+                /** @description Campaign list result. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ListCampaignsResponse"];
+                    };
+                };
+                /** @description Bad request or provider credential error. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Missing, invalid, or revoked API key. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Authenticated key lacks required scope. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Requested resource or provider connection not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Conflict. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Quota or rate limit exceeded. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Internal server error. */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+                /** @description Tool/provider pair is not supported. */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorEnvelope"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1245,6 +1471,14 @@ export interface components {
             };
             provider_metadata?: {
                 [key: string]: unknown;
+            };
+            job?: {
+                /** @enum {string} */
+                status: "pending";
+                /** @example job_abc123 */
+                job_id: string;
+                /** @example Check the provider job before replaying. */
+                hint: string;
             };
             /** @example true */
             _test_mode?: boolean;
@@ -1317,7 +1551,7 @@ export interface components {
          */
         UpsertContactInput: {
             /** @enum {string} */
-            provider?: "sendgrid" | "mailchimp" | "klaviyo";
+            provider: "sendgrid" | "mailchimp" | "klaviyo";
             /** Format: email */
             email: string;
             first_name?: string;
@@ -1388,7 +1622,7 @@ export interface components {
          */
         SendTransactionalInput: {
             /** @enum {string} */
-            provider?: "sendgrid" | "mailchimp" | "klaviyo";
+            provider: "sendgrid" | "mailchimp" | "klaviyo";
             /** Format: email */
             to: string;
             /** Format: email */
@@ -1418,7 +1652,7 @@ export interface components {
          */
         GetCampaignStatsInput: {
             /** @enum {string} */
-            provider?: "sendgrid" | "mailchimp" | "klaviyo";
+            provider: "sendgrid" | "mailchimp" | "klaviyo";
             campaign_id: string;
         };
         /** @description Normalized get_campaign_stats result. */
@@ -1456,6 +1690,83 @@ export interface components {
                  */
                 end: string;
             };
+        };
+        /**
+         * @description List provider templates with normalized cursor pagination.
+         * @example {
+         *       "provider": "sendgrid",
+         *       "limit": 25
+         *     }
+         */
+        ListTemplatesInput: {
+            /** @enum {string} */
+            provider: "sendgrid" | "mailchimp" | "klaviyo";
+            /** @default 25 */
+            limit: number;
+            cursor?: string;
+        };
+        /** @description Normalized list_templates result. */
+        ListTemplatesData: {
+            provider: components["schemas"]["Provider"];
+            templates: {
+                /** @example tmpl_123 */
+                id: string;
+                /** @example Welcome email */
+                name: string;
+                /** @example null */
+                subject: string | null;
+                /**
+                 * Format: date-time
+                 * @description ISO 8601 timestamp.
+                 * @example 2026-04-27T12:00:00.000Z
+                 */
+                updated_at: string;
+            }[];
+            /** @example null */
+            next_cursor: string | null;
+        };
+        /**
+         * @description List provider campaigns with normalized status and cursor pagination.
+         * @example {
+         *       "provider": "sendgrid",
+         *       "status": "all",
+         *       "limit": 25
+         *     }
+         */
+        ListCampaignsInput: {
+            /** @enum {string} */
+            provider: "sendgrid" | "mailchimp" | "klaviyo";
+            /**
+             * @default all
+             * @enum {string}
+             */
+            status: "draft" | "scheduled" | "sent" | "all";
+            /** @default 25 */
+            limit: number;
+            cursor?: string;
+        };
+        /** @description Normalized list_campaigns result. */
+        ListCampaignsData: {
+            provider: components["schemas"]["Provider"];
+            campaigns: {
+                /** @example camp_123 */
+                id: string;
+                /** @example Spring promo */
+                name: string;
+                /**
+                 * @example sent
+                 * @enum {string}
+                 */
+                status: "draft" | "scheduled" | "sent" | "unknown";
+                /**
+                 * Format: date-time
+                 * @description ISO 8601 timestamp.
+                 * @example 2026-04-27T12:00:00.000Z
+                 */
+                updated_at: string;
+            }[];
+            /** @example null */
+            next_cursor: string | null;
         };
         /**
          * @description Create a Vorlek account and initial live/test API keys.
@@ -1643,6 +1954,22 @@ export interface components {
             /** @enum {string} */
             status: "success";
             data: components["schemas"]["CampaignStatsData"];
+            meta: components["schemas"]["SuccessMeta"];
+            tip: string | null;
+        };
+        /** @description ListTemplatesResponse response envelope. */
+        ListTemplatesResponse: {
+            /** @enum {string} */
+            status: "success";
+            data: components["schemas"]["ListTemplatesData"];
+            meta: components["schemas"]["SuccessMeta"];
+            tip: string | null;
+        };
+        /** @description ListCampaignsResponse response envelope. */
+        ListCampaignsResponse: {
+            /** @enum {string} */
+            status: "success";
+            data: components["schemas"]["ListCampaignsData"];
             meta: components["schemas"]["SuccessMeta"];
             tip: string | null;
         };

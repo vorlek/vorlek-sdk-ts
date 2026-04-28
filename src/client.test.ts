@@ -90,6 +90,82 @@ describe('VorlekClient request shape', () => {
     expect(req.body).toEqual({ provider: 'sendgrid', campaign_id: 'cmp_1' });
   });
 
+  it('sends template.list to /v1/tools/list_templates and returns cursors', async () => {
+    const fetchMock = vi.fn(async () =>
+      ok({
+        provider: 'sendgrid',
+        templates: [
+          { id: 'tmpl_1', name: 'Welcome', subject: null, updated_at: '2026-04-28T00:00:00.000Z' },
+        ],
+        next_cursor: 'tmpl_cursor_2',
+      })
+    );
+    const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
+
+    const result = await client.template.list({
+      provider: 'sendgrid',
+      limit: 1,
+      cursor: 'tmpl_cursor_1',
+    });
+
+    const req = requestParts(fetchMock);
+    expect(req.url.href).toBe('https://api.vorlek.com/v1/tools/list_templates');
+    expect(req.body).toEqual({ provider: 'sendgrid', limit: 1, cursor: 'tmpl_cursor_1' });
+    expect(result.data.next_cursor).toBe('tmpl_cursor_2');
+  });
+
+  it('sends campaign.list to /v1/tools/list_campaigns and returns cursors', async () => {
+    const fetchMock = vi.fn(async () =>
+      ok({
+        provider: 'mailchimp',
+        campaigns: [
+          { id: 'camp_1', name: 'Launch', status: 'draft', updated_at: '2026-04-28T00:00:00.000Z' },
+        ],
+        next_cursor: 'camp_cursor_2',
+      })
+    );
+    const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
+
+    const result = await client.campaign.list({
+      provider: 'mailchimp',
+      status: 'draft',
+      limit: 1,
+      cursor: 'camp_cursor_1',
+    });
+
+    const req = requestParts(fetchMock);
+    expect(req.url.href).toBe('https://api.vorlek.com/v1/tools/list_campaigns');
+    expect(req.body).toEqual({
+      provider: 'mailchimp',
+      status: 'draft',
+      limit: 1,
+      cursor: 'camp_cursor_1',
+    });
+    expect(result.data.next_cursor).toBe('camp_cursor_2');
+  });
+
+  it('allows template.list with only a provider', async () => {
+    const fetchMock = vi.fn(async () =>
+      ok({ provider: 'klaviyo', templates: [], next_cursor: null })
+    );
+    const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
+
+    await client.template.list({ provider: 'klaviyo' });
+
+    expect(requestParts(fetchMock).body).toEqual({ provider: 'klaviyo' });
+  });
+
+  it('allows campaign.list with only a provider', async () => {
+    const fetchMock = vi.fn(async () =>
+      ok({ provider: 'sendgrid', campaigns: [], next_cursor: null })
+    );
+    const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
+
+    await client.campaign.list({ provider: 'sendgrid' });
+
+    expect(requestParts(fetchMock).body).toEqual({ provider: 'sendgrid' });
+  });
+
   it('sends connection.status to /v1/tools/get_connection_status', async () => {
     const fetchMock = vi.fn(async () => ok({ provider: 'sendgrid', status: 'active' }));
     const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
@@ -109,7 +185,7 @@ describe('VorlekClient request shape', () => {
       fetch: fetchMock,
     });
 
-    await client.contact.upsert({ email: 'a@example.com' });
+    await client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' });
 
     expect(requestParts(fetchMock).url.href).toBe('https://example.test/v1/tools/upsert_contact');
   });
@@ -122,7 +198,7 @@ describe('VorlekClient request shape', () => {
       fetch: fetchMock,
     });
 
-    await client.contact.upsert({ email: 'a@example.com' });
+    await client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' });
 
     expect(requestParts(fetchMock).headers.get('idempotency-key')).toBe('CUSTOMKEY');
   });
@@ -166,7 +242,7 @@ describe('VorlekClient request shape', () => {
     );
     const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
 
-    const result = await client.contact.upsert({ email: 'a@example.com' });
+    const result = await client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' });
 
     expect(result).toEqual({
       data: { contact_id: 'c1', action: 'upserted' },
@@ -197,7 +273,7 @@ describe('VorlekClient request shape', () => {
     );
     const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
 
-    const result = await client.contact.upsert({ email: 'a@example.com' });
+    const result = await client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' });
 
     expect(result.meta.ratelimit).toEqual({
       check_skipped: false,
@@ -213,7 +289,7 @@ describe('VorlekClient request shape', () => {
     );
     const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
 
-    const result = await client.contact.upsert({ email: 'a@example.com' });
+    const result = await client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' });
 
     expect(result.meta.idempotency?.replay).toBe(true);
   });
@@ -261,14 +337,18 @@ describe('VorlekClient error mapping', () => {
       const fetchMock = vi.fn(async () => errorResponse(code, category, retrySafe, status));
       const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
 
-      await expect(client.contact.upsert({ email: 'a@example.com' })).rejects.toMatchObject({
+      await expect(
+        client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' })
+      ).rejects.toMatchObject({
         code,
         retrySafe,
         category,
         httpStatus: status,
         requestId: '01HV0000000000000000000000',
       });
-      await expect(client.contact.upsert({ email: 'a@example.com' })).rejects.toBeInstanceOf(klass);
+      await expect(
+        client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' })
+      ).rejects.toBeInstanceOf(klass);
     }
   );
 
@@ -276,7 +356,9 @@ describe('VorlekClient error mapping', () => {
     const fetchMock = vi.fn(async () => Response.json({ unexpected: true }, { status: 502 }));
     const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
 
-    await expect(client.contact.upsert({ email: 'a@example.com' })).rejects.toMatchObject({
+    await expect(
+      client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' })
+    ).rejects.toMatchObject({
       code: 'INTERNAL_ERROR',
       httpStatus: 502,
     });
@@ -288,7 +370,9 @@ describe('VorlekClient error mapping', () => {
     });
     const client = new VorlekClient({ apiKey: 'vk_test_x', fetch: fetchMock });
 
-    await expect(client.contact.upsert({ email: 'a@example.com' })).rejects.toMatchObject({
+    await expect(
+      client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' })
+    ).rejects.toMatchObject({
       code: 'NETWORK_ERROR',
       retrySafe: true,
       category: 'system',
@@ -309,7 +393,9 @@ describe('VorlekClient error mapping', () => {
     );
     const client = new VorlekClient({ apiKey: 'vk_test_x', timeout: 5, fetch: fetchMock });
 
-    await expect(client.contact.upsert({ email: 'a@example.com' })).rejects.toMatchObject({
+    await expect(
+      client.contact.upsert({ provider: 'sendgrid', email: 'a@example.com' })
+    ).rejects.toMatchObject({
       code: 'NETWORK_ERROR',
     });
     expect(signal?.aborted).toBe(true);

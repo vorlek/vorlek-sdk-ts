@@ -59,6 +59,23 @@ export type GetCampaignStatsResult = EnvelopeData<
   JsonSuccess<'/v1/tools/get_campaign_stats', 'post'>
 >;
 
+export interface ListTemplatesInput {
+  provider: 'sendgrid' | 'mailchimp' | 'klaviyo';
+  limit?: number;
+  cursor?: string;
+}
+
+export type ListTemplatesResult = EnvelopeData<JsonSuccess<'/v1/tools/list_templates', 'post'>>;
+
+export interface ListCampaignsInput {
+  provider: 'sendgrid' | 'mailchimp' | 'klaviyo';
+  status?: 'draft' | 'scheduled' | 'sent' | 'all';
+  limit?: number;
+  cursor?: string;
+}
+
+export type ListCampaignsResult = EnvelopeData<JsonSuccess<'/v1/tools/list_campaigns', 'post'>>;
+
 export type GetConnectionStatusInput = JsonRequest<'/v1/tools/get_connection_status', 'post'>;
 export type GetConnectionStatusResult = EnvelopeData<
   JsonSuccess<'/v1/tools/get_connection_status', 'post'>

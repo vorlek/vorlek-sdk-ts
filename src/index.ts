@@ -4,6 +4,7 @@ export type {
   ConnectionNamespace,
   ContactNamespace,
   SendNamespace,
+  TemplateNamespace,
   VorlekClientOptions,
 } from './client.js';
 export {

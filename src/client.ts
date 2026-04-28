@@ -5,6 +5,10 @@ import type {
   GetCampaignStatsResult,
   GetConnectionStatusInput,
   GetConnectionStatusResult,
+  ListCampaignsInput,
+  ListCampaignsResult,
+  ListTemplatesInput,
+  ListTemplatesResult,
   RequestOptions,
   ResponseMeta,
   SendTransactionalInput,
@@ -42,6 +46,17 @@ export interface CampaignNamespace {
     input: GetCampaignStatsInput,
     options?: RequestOptions
   ): Promise<VorlekResult<GetCampaignStatsResult>>;
+  list(
+    input: ListCampaignsInput,
+    options?: RequestOptions
+  ): Promise<VorlekResult<ListCampaignsResult>>;
+}
+
+export interface TemplateNamespace {
+  list(
+    input: ListTemplatesInput,
+    options?: RequestOptions
+  ): Promise<VorlekResult<ListTemplatesResult>>;
 }
 
 export interface ConnectionNamespace {
@@ -58,6 +73,7 @@ export class VorlekClient {
   readonly contact: ContactNamespace;
   readonly send: SendNamespace;
   readonly campaign: CampaignNamespace;
+  readonly template: TemplateNamespace;
   readonly connection: ConnectionNamespace;
 
   private readonly apiKey: string;
@@ -84,6 +100,10 @@ export class VorlekClient {
     };
     this.campaign = {
       stats: (input, options) => this.post('/v1/tools/get_campaign_stats', input, options),
+      list: (input, options) => this.post('/v1/tools/list_campaigns', input, options),
+    };
+    this.template = {
+      list: (input, options) => this.post('/v1/tools/list_templates', input, options),
     };
     this.connection = {
       status: (input, options) => this.post('/v1/tools/get_connection_status', input, options),
