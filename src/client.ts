@@ -210,12 +210,14 @@ function extractMeta(body: { meta?: unknown }, headers: Headers): ResponseMeta {
   const idempotency = isRecord(bodyMeta.idempotency)
     ? { replay: bodyMeta.idempotency.replay === true }
     : undefined;
+  const testMode = typeof bodyMeta.test_mode === 'boolean' ? bodyMeta.test_mode : undefined;
 
   return {
     request_id: typeof bodyMeta.request_id === 'string' ? bodyMeta.request_id : '',
     ...(quota ? { quota } : {}),
     ...(ratelimit ? { ratelimit } : {}),
     ...(idempotency ? { idempotency } : {}),
+    ...(testMode !== undefined ? { test_mode: testMode } : {}),
   };
 }
 

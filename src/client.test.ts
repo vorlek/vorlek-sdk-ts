@@ -237,6 +237,7 @@ describe('VorlekClient request shape', () => {
         { contact_id: 'c1', action: 'upserted' },
         {
           quota: { used: 7, limit: 1000, resets_at: '2026-05-01T00:00:00.000Z' },
+          test_mode: true,
         }
       )
     );
@@ -249,6 +250,7 @@ describe('VorlekClient request shape', () => {
       meta: {
         request_id: '01HV0000000000000000000000',
         quota: { used: 7, limit: 1000, resets_at: '2026-05-01T00:00:00.000Z' },
+        test_mode: true,
       },
     });
   });

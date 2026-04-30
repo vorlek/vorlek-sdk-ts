@@ -1481,7 +1481,7 @@ export interface components {
                 hint: string;
             };
             /** @example true */
-            _test_mode?: boolean;
+            test_mode?: boolean;
         };
         /**
          * @description Stable server-side error category.
@@ -1536,6 +1536,8 @@ export interface components {
                 /** @example 87 */
                 total_latency_ms?: number;
                 quota?: components["schemas"]["QuotaMeta"];
+                /** @example true */
+                test_mode?: boolean;
             };
         };
         /**

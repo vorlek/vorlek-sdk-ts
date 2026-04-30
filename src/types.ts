@@ -35,6 +35,7 @@ export interface ResponseMeta {
     check_skipped?: boolean;
   };
   idempotency?: { replay: boolean };
+  test_mode?: boolean;
 }
 
 export interface VorlekResult<TData> {
